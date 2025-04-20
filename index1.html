@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Smart Keyboard</title>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #1976D2;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --key-color: #f5f5f5;
+            --key-hover: #e9ecef;
+            --key-active: #dee2e6;
+            --border-radius: 8px;
+            --transition-speed: 0.2s;
+        }
+
+        /* Dark theme */
+        .dark-theme {
+            --primary-color: #90CAF9;
+            --secondary-color: #64B5F6;
+            --background-color: #121212;
+            --text-color: #ffffff;
+            --key-color: #2c2c2c;
+            --key-hover: #3c3c3c;
+            --key-active: #4c4c4c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all var(--transition-speed);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+        }
+
+        .theme-toggle {
+            background: var(--key-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            color: var(--text-color);
+            transition: all var(--transition-speed);
+        }
+
+        .theme-toggle:hover {
+            background: var(--key-hover);
+        }
+
+        .text-area {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #textInput {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid var(--key-color);
+            border-radius: var(--border-radius);
+            background: var(--background-color);
+            color: var(--text-color);
+            resize: vertical;
+            outline: none;
+            transition: border-color var(--transition-speed);
+        }
+
+        #textInput:focus {
+            border-color: var(--primary-color);
+        }
+
+        .predictions {
+            position: absolute;
+            bottom: -120px;
+            left: 0;
+            right: 0;
+            background: var(--background-color);
+            border: 1px solid var(--key-color);
+            border-radius: var(--border-radius);
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .prediction-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background var(--transition-speed);
+        }
+
+        .prediction-item:hover {
+            background: var(--key-hover);
+        }
+
+        .prediction-context {
+            font-size: 12px;
+            color: var(--secondary-color);
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .tool-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--key-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tool-button:hover {
+            background: var(--key-hover);
+        }
+
+        .tool-button:active {
+            background: var(--key-active);
+        }
+
+        .keyboard {
+            background: var(--background-color);
+            border: 1px solid var(--key-color);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+
+        .key {
+            min-width: 45px;
+            height: 45px;
+            margin: 3px;
+            border: none;
+            border-radius: 5px;
+            background: var(--key-color);
+            color: var(--text-color);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-speed);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .key:hover {
+            background: var(--key-hover);
+            transform: translateY(-1px);
+        }
+
+        .key:active {
+            background: var(--key-active);
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .key.special {
+            min-width: 80px;
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .key.space {
+            min-width: 250px;
+        }
+
+        .key.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .macro-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--background-color);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .macro-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .macro-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .macro-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--key-color);
+        }
+
+        .macro-item:last-child {
+            border-bottom: none;
+        }
+
+        .macro-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .macro-form input {
+            padding: 8px;
+            border: 1px solid var(--key-color);
+            border-radius: 5px;
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 10px;
+            background: var(--key-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+        }
+
+        .language-switcher {
+            padding: 5px 10px;
+            border: 1px solid var(--key-color);
+            border-radius: 5px;
+            background: var(--background-color);
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .key {
+                min-width: 35px;
+                height: 35px;
+                font-size: 14px;
+            }
+            
+            .key.special {
+                min-width: 60px;
+            }
+            
+            .key.space {
+                min-width: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Advanced Smart Keyboard</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <span class="theme-icon">🌓</span> Toggle Theme
+            </button>
+        </div>
+        
+        <div class="text-area">
+            <textarea id="textInput" placeholder="Start typing..."></textarea>
+            <div class="predictions" id="predictions"></div>
+        </div>
+        
+        <div class="toolbar">
+            <button class="tool-button" onclick="showMacroPanel()">⚡ Macros</button>
+            <button class="tool-button" onclick="togglePredictions()">🤖 Predictions</button>
+            <button class="tool-button" onclick="copyText()">📋 Copy</button>
+            <button class="tool-button" onclick="pasteText()">📃 Paste</button>
+            <button class="tool-button" onclick="clearText()">🗑️ Clear</button>
+            <button class="tool-button" onclick="undo()">↩️ Undo</button>
+            <button class="tool-button" onclick="redo()">↪️ Redo</button>
+            <select class="language-switcher" onchange="changeLanguage(this.value)">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+            </select>
+        </div>
+        
+        <div class="keyboard">
+            <div class="keyboard-row" id="row1"></div>
+            <div class="keyboard-row" id="row2"></div>
+            <div class="keyboard-row" id="row3"></div>
+            <div class="keyboard-row" id="row4"></div>
+            <div class="keyboard-row" id="row5"></div>
+        </div>
+        
+        <div class="status-bar">
+            <div>Characters: <span id="charCount">0</span> | Words: <span id="wordCount">0</span></div>
+            <div>Language: <span id="currentLang">English</span></div>
+            <div>Caps Lock: <span id="capsStatus">OFF</span></div>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="macro-panel" id="macroPanel">
+        <div class="macro-header">
+            <h3>Macro Manager</h3>
+            <button class="tool-button" onclick="hideMacroPanel()">✖</button>
+        </div>
+        <div class="macro-list" id="macroList"></div>
+        <div class="macro-form">
+            <input type="text" id="macroName" placeholder="Macro Name">
+            <input type="text" id="macroShortcut" placeholder="Shortcut (e.g., ctrl+shift+m)">
+            <textarea id="macroContent" placeholder="Macro Content"></textarea>
+            <button class="tool-button" onclick="addMacro()">Add Macro</button>
+        </div>
+    </div>
+
+    <script>
+        // State variables
+        let capsLock = false;
+        let shiftPressed = false;
+        let ctrlPressed = false;
+        let altPressed = false;
+        let predictionsEnabled = true;
+        let currentLanguage = 'en';
+        let undoStack = [];
+        let redoStack = [];
+        let macros = {};
+        
+        // Language layouts
+        const layouts = {
+            en: {
+                row1: ['`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Backspace'],
+                row2: ['Tab', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\'],
+                row3: ['CapsLock', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', "'", 'Enter'],
+                row4: ['Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 'Shift'],
+                row5: ['Ctrl', 'Alt', 'Space', 'Alt', 'Ctrl']
+            },
+            es: {
+                row1: ['º', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', "'", '¡', 'Backspace'],
+                row2: ['Tab', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '`', '+', 'ç'],
+                row3: ['CapsLock', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ñ', '´', 'Enter'],
+                row4: ['Shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-', 'Shift'],
+                row5: ['Ctrl', 'Alt', 'Space', 'Alt', 'Ctrl']
+            },
+            fr: {
+                row1: ['²', '&', 'é', '"', "'", '(', '-', 'è', '_', 'ç', 'à', ')', '=', 'Backspace'],
+                row2: ['Tab', 'a', 'z', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '^', '$', '*'],
+                row3: ['CapsLock', 'q', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'ù', 'Enter'],
+                row4: ['Shift', 'w', 'x', 'c', 'v', 'b', 'n', ',', ';', ':', '!', 'Shift'],
+                row5: ['Ctrl', 'Alt', 'Space', 'Alt', 'Ctrl']
+            },
+            de: {
+                row1: ['^', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'ß', '´', 'Backspace'],
+                row2: ['Tab', 'q', 'w', 'e', 'r', 't', 'z', 'u', 'i', 'o', 'p', 'ü', '+', '#'],
+                row3: ['CapsLock', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'ö', 'ä', 'Enter'],
+                row4: ['Shift', 'y', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '-', 'Shift'],
+                row5: ['Ctrl', 'Alt', 'Space', 'Alt', 'Ctrl']
+            }
+        };
+        
+        // Prediction dictionary
+        const predictionData = {
+            en: {
+                words: {
+                    'the': ['they', 'their', 'there', 'these', 'them'],
+                    'qu': ['quick', 'quiet', 'quite', 'question', 'quality'],
+                    'pro': ['program', 'process', 'project', 'professional', 'produce'],
+                    'dev': ['develop', 'developer', 'development', 'device', 'deviation'],
+                    'com': ['computer', 'company', 'complete', 'command', 'community'],
+                    'int': ['internet', 'interface', 'internal', 'integer', 'integrate'],
+                    'app': ['application', 'approach', 'appointment', 'appropriate', 'apple'],
+                    'sys': ['system', 'systematic', 'systems', 'systematically', 'sysadmin'],
+                    'net': ['network', 'net', 'networking', 'netbook', 'netcode'],
+                    'dat': ['data', 'database', 'date', 'datetime', 'dataset']
+                },
+                phrases: {
+                    'how to': [
+                        'how to learn programming',
+                        'how to use this keyboard',
+                        'how to become a developer',
+                        'how to write clean code',
+                        'how to debug effectively'
+                    ],
+                    'what is': [
+                        'what is object-oriented programming',
+                        'what is machine learning',
+                        'what is cloud computing',
+                        'what is artificial intelligence',
+                        'what is data science'
+                    ],
+                    'best practices': [
+                        'best practices for web development',
+                        'best practices for code organization',
+                        'best practices for security',
+                        'best practices for performance',
+                        'best practices for testing'
+                    ]
+                }
+            },
+            es: {
+                words: {
+                    'com': ['como', 'común', 'completo', 'comenzar', 'computadora'],
+                    'pro': ['programa', 'proceso', 'proyecto', 'profesional', 'producir'],
+                    'des': ['desarrollo', 'desarrollador', 'describir', 'después', 'descargar'],
+                    'app': ['aplicación', 'aparecer', 'apropiado', 'aprender', 'apliqué'],
+                    'int': ['internet', 'interfaz', 'interno', 'integrar', 'inteligente']
+                },
+                phrases: {
+                    'cómo': [
+                        'cómo programar en JavaScript',
+                        'cómo aprender desarrollo web',
+                        'cómo usar esta aplicación',
+                        'cómo escribir código limpio',
+                        'cómo resolver errores'
+                    ],
+                    'qué es': [
+                        'qué es la programación orientada a objetos',
+                        'qué es el aprendizaje automático',
+                        'qué es la computación en la nube',
+                        'qué es la inteligencia artificial',
+                        'qué es la ciencia de datos'
+                    ]
+                }
+            },
+            fr: {
+                words: {
+                    'com': ['comment', 'commencer', 'complet', 'commun', 'commander'],
+                    'pro': ['programme', 'projet', 'processus', 'professionnel', 'produire'],
+                    'dev': ['développer', 'développeur', 'développement', 'devenir', 'devoir'],
+                    'app': ['application', 'appliquer', 'apprendre', 'approche', 'apparaître'],
+                    'int': ['internet', 'interface', 'interne', 'intégrer', 'intelligent']
+                },
+                phrases: {
+                    'comment': [
+                        'comment programmer en JavaScript',
+                        'comment apprendre le développement web',
+                        'comment utiliser cette application',
+                        'comment écrire un code propre',
+                        'comment résoudre les erreurs'
+                    ],
+                    'qu\'est-ce que': [
+                        'qu\'est-ce que la programmation orientée objet',
+                        'qu\'est-ce que l\'apprentissage automatique',
+                        'qu\'est-ce que l\'informatique en nuage',
+                        'qu\'est-ce que l\'intelligence artificielle',
+                        'qu\'est-ce que la science des données'
+                    ]
+                }
+            },
+            de: {
+                words: {
+                    'com': ['Computer', 'Compiler', 'Commit', 'Community', 'Component'],
+                    'pro': ['Programm', 'Projekt', 'Prozess', 'Produktiv', 'Profil'],
+                    'ent': ['entwickeln', 'Entwickler', 'Entwicklung', 'entdecken', 'entfernen'],
+                    'app': ['Applikation', 'Anwendung', 'Apparat', 'Appendix', 'Approach'],
+                    'sys': ['System', 'Systematisch', 'Syntax', 'Synchron', 'Symbol']
+                },
+                phrases: {
+                    'wie': [
+                        'wie programmiert man in JavaScript',
+                        'wie lernt man Webentwicklung',
+                        'wie benutzt man diese Anwendung',
+                        'wie schreibt man sauberen Code',
+                        'wie löst man Fehler'
+                    ],
+                    'was ist': [
+                        'was ist objektorientierte Programmierung',
+                        'was ist maschinelles Lernen',
+                        'was ist Cloud Computing',
+                        'was ist künstliche Intelligenz',
+                        'was ist Data Science'
+                    ]
+                }
+            }
+        };
+        
+        // Shift key mappings
+        const shiftMap = {
+            '1': '!', '2': '@', '3': '#', '4': '$', '5': '%',
+            '6': '^', '7': '&', '8': '*', '9': '(', '0': ')',
+            '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|',
+            ';': ':', "'": '"', ',': '<', '.': '>', '/': '?',
+            '`': '~'
+        };
+        
+        // Initialize keyboard
+        function initializeKeyboard() {
+            const layout = layouts[currentLanguage];
+            const rows = ['row1', 'row2', 'row3', 'row4', 'row5'];
+            
+            rows.forEach((rowId, index) => {
+                const row = document.getElementById(rowId);
+                row.innerHTML = '';
+                
+                layout[rowId].forEach(key => {
+                    const keyElement = document.createElement('button');
+                    keyElement.className = 'key';
+                    keyElement.textContent = key;
+                    
+                    if (['Shift', 'CapsLock', 'Ctrl', 'Alt', 'Tab', 'Enter', 'Backspace'].includes(key)) {
+                        keyElement.classList.add('special');
+                    }
+                    
+                    if (key === 'Space') {
+                        keyElement.classList.add('space');
+                    }
+                    
+                    keyElement.addEventListener('click', () => handleKeyPress(key));
+                    row.appendChild(keyElement);
+                });
+            });
+        }
+        
+        // Handle key press
+        function handleKeyPress(key) {
+            const textInput = document.getElementById('textInput');
+            
+            switch(key) {
+                case 'Shift':
+                    shiftPressed = !shiftPressed;
+                    updateKeyStates();
+                    break;
+                    
+                case 'CapsLock':
+                    capsLock = !capsLock;
+                    document.getElementById('capsStatus').textContent = capsLock ? 'ON' : 'OFF';
+                    updateKeyStates();
+                    break;
+                    
+                case 'Ctrl':
+                    ctrlPressed = !ctrlPressed;
+                    updateKeyStates();
+                    break;
+                    
+                case 'Alt':
+                    altPressed = !altPressed;
+                    updateKeyStates();
+                    break;
+                    
+                case 'Backspace':
+                    handleBackspace();
+                    break;
+                    
+                case 'Enter':
+                    insertAtCursor('\n');
+                    break;
+                    
+                case 'Tab':
+                    insertAtCursor('\t');
+                    break;
+                    
+                case 'Space':
+                    insertAtCursor(' ');
+                    break;
+                    
+                default:
+                    insertCharacter(key);
+                    if (shiftPressed) {
+                        shiftPressed = false;
+                        updateKeyStates();
+                    }
+            }
+            
+            updateStatusBar();
+            
+            if (predictionsEnabled) {
+                showPredictions();
+            }
+        }
+        
+        // Insert character
+        function insertCharacter(key) {
+            if (key.length === 1) {
+                if (shiftPressed && shiftMap[key]) {
+                    insertAtCursor(shiftMap[key]);
+                } else if (capsLock || shiftPressed) {
+                    insertAtCursor(key.toUpperCase());
+                } else {
+                    insertAtCursor(key.toLowerCase());
+                }
+            }
+        }
+        
+        // Insert at cursor
+        function insertAtCursor(text) {
+            const textInput = document.getElementById('textInput');
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            const currentValue = textInput.value;
+            
+            undoStack.push(currentValue);
+            redoStack = [];
+            
+            const newValue = currentValue.substring(0, start) + text + currentValue.substring(end);
+            textInput.value = newValue;
+            textInput.selectionStart = textInput.selectionEnd = start + text.length;
+        }
+        
+        // Handle backspace
+        function handleBackspace() {
+            const textInput = document.getElementById('textInput');
+            const start = textInput.selectionStart;
+            const end = textInput.selectionEnd;
+            
+            if (start !== end) {
+                const currentValue = textInput.value;
+                undoStack.push(currentValue);
+                redoStack = [];
+                
+                textInput.value = currentValue.substring(0, start) + currentValue.substring(end);
+                textInput.selectionStart = textInput.selectionEnd = start;
+            } else if (start > 0) {
+                const currentValue = textInput.value;
+                undoStack.push(currentValue);
+                redoStack = [];
+                
+                textInput.value = currentValue.substring(0, start - 1) + currentValue.substring(start);
+                textInput.selectionStart = textInput.selectionEnd = start - 1;
+            }
+        }
+        
+        // Update key states
+        function updateKeyStates() {
+            const keys = document.querySelectorAll('.key');
+            
+            keys.forEach(key => {
+                key.classList.remove('active');
+                
+                const keyText = key.textContent;
+                
+                if (keyText === 'Shift' && shiftPressed) {
+                    key.classList.add('active');
+                } else if (keyText === 'CapsLock' && capsLock) {
+                    key.classList.add('active');
+                } else if (keyText === 'Ctrl' && ctrlPressed) {
+                    key.classList.add('active');
+                } else if (keyText === 'Alt' && altPressed) {
+                    key.classList.add('active');
+                }
+                
+                // Update key appearance for shift state
+                if (keyText.length === 1 && /[a-z]/.test(keyText)) {
+                    if (capsLock || shiftPressed) {
+                        key.textContent = keyText.toUpperCase();
+                    } else {
+                        key.textContent = keyText.toLowerCase();
+                    }
+                } else if (shiftPressed && shiftMap[keyText]) {
+                    key.textContent = shiftMap[keyText];
+                } else if (!shiftPressed && Object.values(shiftMap).includes(keyText)) {
+                    const originalKey = Object.keys(shiftMap).find(k => shiftMap[k] === keyText);
+                    if (originalKey) {
+                        key.textContent = originalKey;
+                    }
+                }
+            });
+        }
+        
+        // Show predictions
+        function showPredictions() {
+            const textInput = document.getElementById('textInput');
+            const predictions = document.getElementById('predictions');
+            const cursorPosition = textInput.selectionStart;
+            const text = textInput.value.substring(0, cursorPosition);
+            const words = text.split(/\s+/);
+            const lastWord = words[words.length - 1].toLowerCase();
+            const lastTwoWords = words.slice(-2).join(' ').toLowerCase();
+            
+            predictions.innerHTML = '';
+            
+            if (!predictionsEnabled || lastWord.length < 2) {
+                predictions.style.display = 'none';
+                return;
+            }
+            
+            const langPredictions = predictionData[currentLanguage];
+            const matchedWords = [];
+            const matchedPhrases = [];
+            
+            // Check for word predictions
+            Object.entries(langPredictions.words).forEach(([prefix, suggestions]) => {
+                if (lastWord.startsWith(prefix)) {
+                    matchedWords.push(...suggestions);
+                }
+            });
+            
+            // Check for phrase predictions
+            Object.entries(langPredictions.phrases).forEach(([prefix, suggestions]) => {
+                if (lastTwoWords.startsWith(prefix)) {
+                    matchedPhrases.push(...suggestions);
+                }
+            });
+            
+            // Combine and deduplicate
+            const allPredictions = [...new Set([...matchedPhrases, ...matchedWords])].slice(0, 5);
+            
+            if (allPredictions.length > 0) {
+                predictions.style.display = 'block';
+                
+                allPredictions.forEach(prediction => {
+                    const predictionItem = document.createElement('div');
+                    predictionItem.className = 'prediction-item';
+                    predictionItem.innerHTML = `
+                        ${prediction}
+                        <span class="prediction-context">${prediction.length > 30 ? 'Phrase' : 'Word'}</span>
+                    `;
+                    
+                    predictionItem.addEventListener('click', () => {
+                        completePrediction(prediction, lastWord, lastTwoWords);
+                        predictions.style.display = 'none';
+                    });
+                    
+                    predictions.appendChild(predictionItem);
+                });
+            } else {
+                predictions.style.display = 'none';
+            }
+        }
+        
+        // Complete prediction
+        function completePrediction(prediction, lastWord, lastTwoWords) {
+            const textInput = document.getElementById('textInput');
+            const cursorPosition = textInput.selectionStart;
+            const text = textInput.value;
+            let newText;
+            
+            // Determine if it's a phrase or word completion
+            if (prediction.toLowerCase().startsWith(lastTwoWords)) {
+                // Replace the last two words
+                const words = text.split(/\s+/);
+                words.splice(-2, 2, prediction);
